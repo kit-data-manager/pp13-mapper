@@ -41,13 +41,13 @@ def extract_zip_file(zip_file_path):
     logging.info(f"Total time taken to process: {total_time:.2f} seconds. The target directory is {target_dir}.")
     return target_dir, temp_dir
 
-#mapFile    = sys.argv[1]
-#inputZip   = sys.argv[2]
-#outputFile = sys.argv[3]
+mapFile    = sys.argv[1]
+inputZip   = sys.argv[2]
+outputFile = sys.argv[3]
 
-mapFile    = "/Users/reetuelzajoseph/pp13-mapper/schemas/sem_fib_nested_schema_map.json"
-inputZip   =  "/Users/reetuelzajoseph/Downloads/testing_data.zip"
-outputFile = "/Users/reetuelzajoseph/Downloads"
+# mapFile    = "/Users/reetuelzajoseph/pp13-mapper/schemas/sem_fib_nested_schema_map.json"
+# inputZip   =  "/Users/reetuelzajoseph/Downloads/testing_data.zip"
+# outputFile = "/Users/reetuelzajoseph/Downloads"
 
 
 def getExampleImage(directory):
@@ -215,17 +215,17 @@ def combineMetadata(acquisition_metadata, dataset_metadata, image_metadata):
             metadata['acquisition']['dataset'][i]['images'].append(image_dict)
     return metadata
 
-#def save_metadata_as_json(metadata, save_path):
- #   with open(save_path, 'w') as file:
-  #      json.dump(metadata, file, indent=4)
-   # logging.info(f"Metadata saved as {save_path}")
+def save_metadata_as_json(metadata, save_path):
+   with open(save_path, 'w') as file:
+       json.dump(metadata, file, indent=4)
+   logging.info(f"Metadata saved as {save_path}")
 
 # # For local tests
-def save_metadata_as_json(metadata, save_path):
-    with open(os.path.join(save_path, 'metadata.json'), 'w') as file:
-        json.dump(metadata, file, indent=4)
-    logging.info(f"Metadata saved as {save_path}")
-    print(f"Metadata saved as {save_path}")
+# def save_metadata_as_json(metadata, save_path):
+#     with open(os.path.join(save_path, 'metadata.json'), 'w') as file:
+#         json.dump(metadata, file, indent=4)
+#     logging.info(f"Metadata saved as {save_path}")
+#     print(f"Metadata saved as {save_path}")
 
 combinedMetadata = combineMetadata(acqMetadata, datasetMetadata, imageMetadata)
 save_metadata_as_json(combinedMetadata, outputFile)
