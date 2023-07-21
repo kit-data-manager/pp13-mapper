@@ -262,13 +262,6 @@ def json_to_dataframe(data_in):
 
     return pandas.DataFrame(flatten_json(data_in))
 
-
-if __name__ == '__main__':
-    json_data = {
-    }
-    df = json_to_dataframe(json_data)
-    #print(df)
-
 # #  for use with the mapping service
 # # convert the dataframe to csv and write it into a csv file
 def save_metadata_as_csv(metadata, save_path):
