@@ -10,6 +10,33 @@ import time
 import sys
 import logging
 
+def assign_nested_value(nested_dict, keys_string, value):
+    keys = keys_string.split('.')
+    current_dict = nested_dict
+
+    for key in keys[:-1]:  # We iterate until the penultimate key
+        if key.endswith('[]'):  # The key refers to a list
+            key = key.rstrip('[]')  # Remove the '[]' sign from the key
+            if key not in current_dict or not isinstance(current_dict[key], list):  # If the key doesn't exist or it's not a list, we create an empty list
+                current_dict[key] = []
+            if not current_dict[key] or not isinstance(current_dict[key][-1], dict):  # If the list is empty or the last element is not a dictionary, we append an empty dictionary
+                current_dict[key].append({})
+            current_dict = current_dict[key][-1]  # We go one level down to the last dictionary in the list
+        else:
+            if key not in current_dict:  # If the key doesn't exist, we create an empty dict
+                current_dict[key] = {}
+            current_dict = current_dict[key]  # We go one level down
+
+    if keys[-1].endswith('[]'):  # The last key refers to a list
+        keys[-1] = keys[-1].rstrip('[]')  # Remove the '[]' sign from the key
+        if keys[-1] not in current_dict or not isinstance(current_dict[keys[-1]], list):  # If the key doesn't exist or it's not a list, we create an empty list
+            current_dict[keys[-1]] = []
+        current_dict[keys[-1]].append(value)  # We append the value to the list
+    else:
+        current_dict[keys[-1]] = value  # We assign the value to the last key
+
+    return nested_dict
+
 def extract_zip_file(zip_file_path):
     temp_dir = tempfile.mkdtemp()
     
@@ -144,14 +171,19 @@ def processDatasets(datasetNum, imageDirectory):
                     imgPath = os.path.join(root, file)
                     imageMetadataList.append(processImage(imgPath))
     
-    
     return {**mappedEMMetadata, **mappedImgMetadata}, imageMetadataList
 
 datasetMetadata = []
 imageMetadata   = []
-for i, dataset in enumerate(datasetNames[:2]):
+for i, dataset in enumerate(datasetNames[:-1]):
     logging.info(i, dataset)
     datasetMetadataDict, ImageMetadataDict =  processDatasets(i+1, imgDirectory)
+    print(f'This is the current dataset: {dataset}.')
+    datasetMetadataDict['acquisition.dataset[].entry.datasetType'] = dataset
+    
+    # Determine number of images in each dataset
+    datasetMetadataDict['acquisition.dataset[].entry.numberOfItems'] = acqMetadata['acquisition.genericMetadata.numberOfCuts']
+    print(datasetMetadataDict)
     datasetMetadata.append(datasetMetadataDict)
     imageMetadata.append(ImageMetadataDict)
 
@@ -176,7 +208,10 @@ def combineMetadata(acquisition_metadata, dataset_metadata, image_metadata):
         for key, value in dataset.items():
             nested_keys = key.split('.')
             nested_keys.remove('acquisition')
-            nested_keys.remove('dataset')
+            try:
+                nested_keys.remove('dataset')
+            except:
+                nested_keys.remove('dataset[]')
             current_dict = dataset_dict
 
             for nested_key in nested_keys[:-1]:
@@ -210,17 +245,46 @@ def combineMetadata(acquisition_metadata, dataset_metadata, image_metadata):
             metadata['acquisition']['dataset'][i]['images'].append(image_dict)
     return metadata
 
-def save_metadata_as_json(metadata, save_path):
-    with open(save_path, 'w') as file:
-        json.dump(metadata, file, indent=4)
-    logging.info(f"Metadata saved as {save_path}")
 
-# # For local tests
 # def save_metadata_as_json(metadata, save_path):
-#     with open(os.path.join(save_path, 'output.json'), 'w') as file:
+#     with open(save_path, 'w') as file:
 #         json.dump(metadata, file, indent=4)
 #     logging.info(f"Metadata saved as {save_path}")
 
+# # For local tests
+def save_metadata_as_json(metadata, save_path):
+    with open(os.path.join(save_path, 'output.json'), 'w') as file:
+        json.dump(metadata, file, indent=4)
+    logging.info(f"Metadata saved as {save_path}")
+
+    
+def fixBooleans(d):
+    if isinstance(d, dict):
+        for k, v in d.items():
+            if isinstance(v, str):
+                v = v.lower().strip()
+                if v == 'on' or v == 'yes':
+                    d[k] = True
+                elif v == 'off' or v == 'no':
+                    d[k] = False
+            elif isinstance(v, list):
+                for i in range(len(v)):
+                    v[i] = fixBooleans(v[i])
+            else:
+                d[k] = fixBooleans(v)
+    elif isinstance(d, list):
+        for i in range(len(d)):
+            d[i] = fixBooleans(d[i])
+    return d
+
+def cleanMetadata(nestedDict):
+    x1 = assign_nested_value(nestedDict, 'acquisition.dataset[].entry.definition', 'acquisition_dataset')
+    x2 = assign_nested_value(x1, 'acquisition.dataset[].entry.numberOfItems', '')
+    x3 = assign_nested_value(x2, 'acquisition.dataset[].entry.images[].entry.definition', 'acquisition_image')
+    x4 = fixBooleans(x3)
+    return x4
+
 combinedMetadata = combineMetadata(acqMetadata, datasetMetadata, imageMetadata)
-save_metadata_as_json(combinedMetadata, outputFile)
+cleanedMetadataDict = cleanMetadata(combinedMetadata)
+save_metadata_as_json(cleanedMetadataDict, outputFile)
 shutil.rmtree(tempDir)
