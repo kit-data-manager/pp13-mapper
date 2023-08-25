@@ -9,18 +9,6 @@ import shutil
 import time
 import sys
 import logging
-import pandas
-from copy import deepcopy
-
-# #  for use with the mapping service
-mapFile    = sys.argv[1]
-inputZip   = sys.argv[2]
-outputFile = sys.argv[3]
-
-## for local tests
-# mapFile    = "/Users/reetuelzajoseph/pp13-mapper/schemas/sem_fib_nested_schema_map.json"
-# inputZip   =  "/Users/reetuelzajoseph/Downloads/testing_data.zip"
-# outputFile = "/Users/reetuelzajoseph/Downloads/"
 
 def extract_zip_file(zip_file_path):
     temp_dir = tempfile.mkdtemp()
@@ -52,6 +40,10 @@ def extract_zip_file(zip_file_path):
 
     logging.info(f"Total time taken to process: {total_time:.2f} seconds. The target directory is {target_dir}.")
     return target_dir, temp_dir
+
+mapFile    = sys.argv[1]
+inputZip   = sys.argv[2]
+outputFile = sys.argv[3]
 
 def getExampleImage(directory):
     for file in os.listdir(directory):
@@ -87,30 +79,35 @@ if isinstance(datasets, list):
     datasetNames = [d['Name'] for d in datasets]
 else:
     datasetNames = [datasets['Name']]
-def processDatasets(datasetNum, imageDirectory):
-    # Extract xml data for this dataset
-    mappedEMMetadata = extract_values(datasetXmlMap, xmlMetadata, datasetNum)
-    
-    # Read data from image in proper folder
-    datasetName = datasetNames[datasetNum - 1]
-    for root, dirs, files in os.walk(imageDirectory):
-        if os.path.basename(root) == datasetName:
-            for file in files:
-                if file.endswith('.tif'):
-                    imgPath = os.path.join(root, file)
-                    break
-            break
-    imageData = readFile(imgPath)
-    formattedMetadata = formatMetadata(imageData)
-    imageMetadata = extractImageData(formattedMetadata, datasetImgMap)
-    mappedImgMetadata = headerMapping(imageMetadata, datasetImgMap)
-    
-    return {**mappedEMMetadata, **mappedImgMetadata}
 
-datasetMetadata = []
-for i, dataset in enumerate(datasetNames[:2]):
-    logging.info(i, dataset)
-    datasetMetadata.append(processDatasets(i+1, imgDirectory))
+# def processDatasets(datasetNum, imageDirectory):
+#     # Extract xml data for this dataset
+#     mappedEMMetadata = extract_values(datasetXmlMap, xmlMetadata, datasetNum)
+    
+#     # Read data from image in proper folder
+#     datasetName = datasetNames[datasetNum - 1]
+#     for root, dirs, files in os.walk(imageDirectory):
+#         if os.path.basename(root) == datasetName:
+#             for file in files:
+#                 if file.endswith('.tif'):
+#                     global imgPath
+#                     imgPath = os.path.join(root, file)
+#                     print(f'Here is the image path: {imgPath}')
+#                     break
+#                 # else:
+#                 #     print('Image path not assigned.')
+#             break
+#     imageData = readFile(imgPath)
+#     formattedMetadata = formatMetadata(imageData)
+#     imageMetadata = extractImageData(formattedMetadata, datasetImgMap)
+#     mappedImgMetadata = headerMapping(imageMetadata, datasetImgMap)
+    
+#     return {**mappedEMMetadata, **mappedImgMetadata}
+
+# datasetMetadata = []
+# for i, dataset in enumerate(datasetNames[:2]):
+#     logging.info(i, dataset)
+#     datasetMetadata.append(processDatasets(i+1, imgDirectory))
 
 
 # Read and format image metadata
@@ -135,8 +132,12 @@ def processDatasets(datasetNum, imageDirectory):
         if os.path.basename(root) == datasetName:
             for file in files:
                 if file.endswith('.tif'):
+                    global imgPath
                     imgPath = os.path.join(root, file)
+                    # print(f'Image path in processDatasets = {imgPath}')
                     break
+                else:
+                    print('imgPath in processDatasets not assigned.')
             break
     imageData = readFile(imgPath)
     formattedMetadata = formatMetadata(imageData)
@@ -157,8 +158,9 @@ def processDatasets(datasetNum, imageDirectory):
 
 datasetMetadata = []
 imageMetadata   = []
-for i, dataset in enumerate(datasetNames[:2]):
+for i, dataset in enumerate(datasetNames[:-1]):
     logging.info(i, dataset)
+    print(dataset)
     datasetMetadataDict, ImageMetadataDict =  processDatasets(i+1, imgDirectory)
     datasetMetadata.append(datasetMetadataDict)
     imageMetadata.append(ImageMetadataDict)
@@ -178,7 +180,7 @@ def combineMetadata(acquisition_metadata, dataset_metadata, image_metadata):
         current_dict[nested_keys[-1]] = value
 
     # Combine dataset metadata
-    metadata['acquisition']['dataset']=[]
+    metadata['acquisition']['dataset'] = []
     for dataset in dataset_metadata:
         dataset_dict = {}
         for key, value in dataset.items():
@@ -218,11 +220,16 @@ def combineMetadata(acquisition_metadata, dataset_metadata, image_metadata):
             metadata['acquisition']['dataset'][i]['images'].append(image_dict)
     return metadata
 
-##  convert the nested dictionary to json and save into a json
-def save_metadata_as_json(metadata, save_path):
-    with open(os.path.join(save_path, 'metadata.json'), 'w') as file:
-        json.dump(metadata, file, indent=4)
-    logging.info(f"Metadata saved as {save_path}")
+# def save_metadata_as_json(metadata, save_path):
+#     with open(save_path, 'w') as file:
+#         json.dump(metadata, file, indent=4)
+#     logging.info(f"Metadata saved as {save_path}")
+
+# # For local tests
+#def save_metadata_as_json(metadata, save_path):
+ #   with open(os.path.join(save_path, 'output.json'), 'w') as file:
+  #      json.dump(metadata, file, indent=4)
+   # logging.info(f"Metadata saved as {save_path}")
 
 
 ## create a pandas dataframe with the nested dictionary
