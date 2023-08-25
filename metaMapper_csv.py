@@ -9,6 +9,8 @@ import shutil
 import time
 import sys
 import logging
+import pandas
+from copy import deepcopy
 
 def extract_zip_file(zip_file_path):
     temp_dir = tempfile.mkdtemp()
@@ -40,6 +42,10 @@ def extract_zip_file(zip_file_path):
 
     logging.info(f"Total time taken to process: {total_time:.2f} seconds. The target directory is {target_dir}.")
     return target_dir, temp_dir
+
+# mapFile    = "/Users/reetuelzajoseph/Metadata-Schemas-for-Materials-Science/SEM-FIB Tomography/sem_fib_nested_schema_map.json"
+# inputZip   =  "/Users/reetuelzajoseph/Nextcloud/MatWerk/PP13/NFDI Tomographiedaten/20230707_AlSi13_NFDI_renamed_folders.zip"
+# outputFile = "/Users/reetuelzajoseph/Downloads"
 
 mapFile    = sys.argv[1]
 inputZip   = sys.argv[2]
@@ -220,16 +226,16 @@ def combineMetadata(acquisition_metadata, dataset_metadata, image_metadata):
             metadata['acquisition']['dataset'][i]['images'].append(image_dict)
     return metadata
 
-# def save_metadata_as_json(metadata, save_path):
-#     with open(save_path, 'w') as file:
-#         json.dump(metadata, file, indent=4)
-#     logging.info(f"Metadata saved as {save_path}")
+def save_metadata_as_json(metadata, save_path):
+    with open(save_path, 'w') as file:
+        json.dump(metadata, file, indent=4)
+    logging.info(f"Metadata saved as {save_path}")
 
 # # For local tests
-#def save_metadata_as_json(metadata, save_path):
- #   with open(os.path.join(save_path, 'output.json'), 'w') as file:
-  #      json.dump(metadata, file, indent=4)
-   # logging.info(f"Metadata saved as {save_path}")
+# def save_metadata_as_json(metadata, save_path):
+#     with open(os.path.join(save_path, 'output.json'), 'w') as file:
+#         json.dump(metadata, file, indent=4)
+#     logging.info(f"Metadata saved as {save_path}")
 
 
 ## create a pandas dataframe with the nested dictionary
@@ -280,12 +286,12 @@ def save_metadata_as_csv(metadata, save_path):
 
 # # for local tests
 # # convert the dataframe to csv and write it into a csv file
-# def save_metadata_as_csv(metadata, save_path):
-#     dataframe = json_to_dataframe(metadata)
-#     with open(os.path.join(save_path, 'metadata.csv'), 'w') as file:
+#def save_metadata_as_csv(metadata, save_path):
+#    dataframe = json_to_dataframe(metadata)
+#    with open(os.path.join(save_path, 'metadata.csv'), 'w') as file:
 #         dataframe.to_csv(file, index=False)
-#     logging.info(f"CSV_Metadata saved in {save_path}")
-#     print(f"CSV_Metadata saved in {save_path}")
+#    logging.info(f"CSV_Metadata saved in {save_path}")
+#    print(f"CSV_Metadata saved in {save_path}")
 
 
 combinedMetadata = combineMetadata(acqMetadata, datasetMetadata, imageMetadata)
